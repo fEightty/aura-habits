@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Aura Habits — Трекер Привычек</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Aura Habits — Telegram Mini App</title>
+  
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
   <!-- PWA & Mobile Meta Tags -->
-  <meta name="theme-color" content="#090d16">
+  <meta name="theme-color" content="#080c14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aura Habits">
@@ -15,7 +17,15 @@
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
   
   <style>
-html, body { background-color: #080c14 !important; margin: 0; padding: 0; width: 100%; min-height: 100vh; overflow-x: hidden; }
+html, body {
+  background-color: #080c14 !important;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
 :root {
   --bg-main: #080c14;
   --bg-card: #0f172a;
@@ -45,7 +55,6 @@ html, body { background-color: #080c14 !important; margin: 0; padding: 0; width:
   --radius-full: 9999px;
 
   --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 25px var(--glow-cyan);
 }
 
 * {
@@ -56,14 +65,12 @@ html, body { background-color: #080c14 !important; margin: 0; padding: 0; width:
 }
 
 body {
-  background-color: var(--bg-main);
   color: var(--text-main);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
-  min-height: 100vh;
   position: relative;
-  overflow-x: hidden;
-  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  padding-bottom: calc(50px + env(safe-area-inset-bottom));
+  user-select: none;
 }
 
 /* Ambient background glows */
@@ -73,7 +80,7 @@ body {
   filter: blur(140px);
   pointer-events: none;
   z-index: 0;
-  opacity: 0.25;
+  opacity: 0.22;
 }
 .glow-1 {
   width: 450px;
@@ -92,9 +99,10 @@ body {
 
 /* Main Container */
 .app-container {
-  max-width: 1280px; width: 100%;
+  width: 100%;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 24px 20px;
+  padding: 20px 16px;
   position: relative;
   z-index: 1;
 }
@@ -104,7 +112,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
   gap: 16px;
   flex-wrap: wrap;
 }
@@ -151,7 +159,6 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
 /* Sync Status Badge */
@@ -161,16 +168,12 @@ body {
   gap: 8px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-subtle);
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.sync-badge:hover {
-  background: rgba(255, 255, 255, 0.08);
+  cursor: default;
 }
 
 .status-dot {
@@ -208,7 +211,7 @@ body {
   outline: none;
 }
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .btn-primary {
@@ -218,7 +221,6 @@ body {
 }
 .btn-primary:hover {
   box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5);
-  transform: translateY(-1px);
 }
 
 .btn-secondary {
@@ -248,8 +250,8 @@ body {
 
 .ring-container {
   position: relative;
-  width: 110px;
-  height: 110px;
+  width: 105px;
+  height: 105px;
   flex-shrink: 0;
 }
 
@@ -267,7 +269,6 @@ body {
 
 .ring-fill {
   fill: none;
-  stroke: url(#glowGrad);
   stroke: var(--accent-cyan);
   stroke-width: 10;
   stroke-linecap: round;
@@ -287,7 +288,7 @@ body {
 }
 
 .ring-percent {
-  font-size: 24px;
+  font-size: 23px;
   font-weight: 800;
   color: #ffffff;
 }
@@ -347,7 +348,7 @@ body {
 
 /* Week Strip */
 .week-strip-section {
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .week-strip-controls {
@@ -358,7 +359,7 @@ body {
 
 .strip-arrow {
   width: 38px;
-  height: 52px;
+  height: 54px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -370,14 +371,13 @@ body {
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
-.strip-arrow:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+.strip-arrow:active {
+  transform: scale(0.92);
 }
 
 .btn-today {
   padding: 0 14px;
-  height: 52px;
+  height: 54px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -388,9 +388,8 @@ body {
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
-.btn-today:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+.btn-today:active {
+  transform: scale(0.95);
 }
 
 .week-strip {
@@ -408,7 +407,7 @@ body {
 .day-pill {
   flex: 1;
   min-width: 52px;
-  height: 58px;
+  height: 56px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -420,11 +419,11 @@ body {
   transition: all 0.2s ease;
   position: relative;
 }
-.day-pill:hover {
-  background: rgba(255, 255, 255, 0.06);
+.day-pill:active {
+  transform: scale(0.94);
 }
 .day-pill.active {
-  background: linear-gradient(180deg, rgba(6, 182, 212, 0.15), rgba(6, 182, 212, 0.05));
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.18), rgba(6, 182, 212, 0.05));
   border-color: var(--accent-cyan);
   box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
 }
@@ -495,9 +494,8 @@ body {
   white-space: nowrap;
   transition: all 0.2s ease;
 }
-.filter-pill:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+.filter-pill:active {
+  transform: scale(0.95);
 }
 .filter-pill.active {
   background: var(--text-main);
@@ -506,13 +504,13 @@ body {
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
-/* Habits List */
+/* Habits Grid */
 .habits-section {
   position: relative;
 }
 .habits-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 14px;
 }
 
@@ -521,11 +519,11 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 16px 20px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
   gap: 16px;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -538,16 +536,10 @@ body {
   bottom: 0;
   width: 4px;
   background: var(--card-color, var(--accent-cyan));
-  opacity: 0.8;
-  transition: opacity 0.2s ease;
-}
-.habit-card:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-active);
-  transform: translateY(-1px);
+  opacity: 0.85;
 }
 .habit-card.completed {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.65);
 }
 .habit-card.completed .habit-title {
   text-decoration: line-through;
@@ -565,10 +557,6 @@ body {
   font-size: 22px;
   flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: transform 0.2s ease;
-}
-.habit-card:hover .habit-icon-badge {
-  transform: scale(1.05);
 }
 
 .habit-details {
@@ -583,7 +571,6 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.2s ease;
 }
 
 .habit-meta {
@@ -611,13 +598,13 @@ body {
 .habit-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
 .toggle-check-btn {
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   border: 2px solid var(--border-active);
   background: rgba(255, 255, 255, 0.03);
@@ -629,10 +616,8 @@ body {
   color: transparent;
   outline: none;
 }
-.toggle-check-btn:hover {
-  border-color: var(--card-color, var(--accent-green));
-  background: rgba(255, 255, 255, 0.08);
-  transform: scale(1.08);
+.toggle-check-btn:active {
+  transform: scale(0.9);
 }
 .toggle-check-btn.checked {
   background: var(--card-color, var(--accent-green));
@@ -663,11 +648,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
 }
-.habit-menu-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.06);
+.habit-menu-btn:active {
+  transform: scale(0.9);
 }
 
 /* Empty State */
@@ -722,7 +705,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(4, 7, 14, 0.75);
+  background: rgba(4, 7, 14, 0.8);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   display: flex;
@@ -789,10 +772,6 @@ body {
   color: var(--text-dim);
   cursor: pointer;
   line-height: 1;
-  transition: color 0.2s ease;
-}
-.modal-close:hover {
-  color: #ffffff;
 }
 
 .modal-body {
@@ -820,7 +799,6 @@ body {
   font-size: 14px;
   color: #ffffff;
   outline: none;
-  transition: border-color 0.2s ease;
 }
 .form-group input:focus,
 .form-group select:focus {
@@ -851,10 +829,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-}
-.emoji-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
 }
 .emoji-btn.active {
   border-color: var(--accent-cyan);
@@ -874,14 +848,10 @@ body {
   background: var(--c);
   border: 3px solid transparent;
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-.color-btn:hover {
-  transform: scale(1.15);
 }
 .color-btn.active {
   border-color: #ffffff;
-  transform: scale(1.18);
+  transform: scale(1.15);
   box-shadow: 0 0 14px var(--c);
 }
 
@@ -890,106 +860,6 @@ body {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 24px;
-}
-
-/* Phone QR Modal Specifics */
-.qr-wrapper {
-  display: flex;
-  justify-content: center;
-  position: relative;
-  margin-bottom: 24px;
-}
-.qr-canvas-box {
-  background: #ffffff;
-  padding: 16px;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 0 30px rgba(6, 182, 212, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 190px;
-  min-height: 190px;
-}
-.qr-canvas-box img,
-.qr-canvas-box canvas {
-  display: block;
-}
-
-.phone-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-.step-item {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-}
-.step-num {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--accent-cyan);
-  color: #000000;
-  font-weight: 800;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.step-info strong {
-  display: block;
-  font-size: 14px;
-  color: #ffffff;
-  margin-bottom: 2px;
-}
-.step-info span {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.url-copy-box {
-  background: rgba(255, 255, 255, 0.03);
-  padding: 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-}
-.url-label {
-  display: block;
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-}
-.url-input-row {
-  display: flex;
-  gap: 8px;
-}
-.url-input-row input {
-  flex: 1;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--accent-cyan);
-  padding: 8px 12px;
-  font-size: 13px;
-  font-family: monospace;
-  outline: none;
-}
-.btn-copy {
-  padding: 8px 14px;
-  font-size: 13px;
-}
-.copy-success-msg {
-  display: none;
-  font-size: 12px;
-  color: var(--accent-green);
-  margin-top: 6px;
 }
 
 /* Stats Modal Grid */
@@ -1111,17 +981,13 @@ body {
   z-index: 9999;
 }
 
-/* Responsive Rules for Mobile */
+/* Responsive Rules for Mobile / Telegram App */
 @media (max-width: 768px) {
-  .habits-list {
-    grid-template-columns: 1fr;
-  }
-
   .app-container {
-    padding: 16px 14px;
+    padding: 14px 12px;
   }
   .app-header {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
   .btn .btn-text {
     display: none;
@@ -1133,11 +999,16 @@ body {
     font-size: 19px;
   }
 
+  .habits-list {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
   .progress-hero {
     flex-direction: column;
     text-align: center;
-    padding: 20px 16px;
-    gap: 18px;
+    padding: 18px 14px;
+    gap: 16px;
   }
   .hero-stats-row {
     justify-content: center;
@@ -1165,7 +1036,7 @@ body {
 </style>
 </head>
 <body>
-  <!-- Background ambient glow effects -->
+  <!-- Ambient background glow effects -->
   <div class="ambient-glow glow-1"></div>
   <div class="ambient-glow glow-2"></div>
 
@@ -1185,14 +1056,11 @@ body {
       </div>
 
       <div class="header-actions">
-        <!-- Live Sync Status Indicator -->
-        <button class="sync-badge" id="syncStatusBtn" title="Нажмите для проверки сети">
+        <!-- Sync Status Pill -->
+        <div class="sync-badge" id="syncStatusBadge">
           <span class="status-dot online"></span>
           <span class="status-text" id="syncStatusText">В сети</span>
-        </button>
-
-        <!-- Connect Phone Button -->
-        
+        </div>
 
         <!-- Stats Button -->
         <button class="btn btn-secondary" id="openStatsModalBtn" title="Статистика">
@@ -1229,7 +1097,7 @@ body {
       </div>
 
       <div class="hero-info">
-        <h2 id="heroMotivationalTitle">Отличный день для новых побед!</h2>
+        <h2 id="heroMotivationalTitle">Отличный день для побед!</h2>
         <p id="heroMotivationalDesc">Выполните свои первые привычки сегодня, чтобы укрепить прогресс.</p>
         <div class="hero-stats-row">
           <div class="mini-stat">
@@ -1283,7 +1151,7 @@ body {
       </div>
     </section>
 
-    <!-- Habit Cards List -->
+    <!-- Habit Cards Grid -->
     <section class="habits-section">
       <div class="habits-list" id="habitsListContainer">
         <!-- Rendered by JS -->
@@ -1441,8 +1309,6 @@ body {
   <!-- Audio Chime Canvas & Particles Overlay -->
   <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
 
-  <!-- Local QR code library -->
-  
   <!-- Application Logic -->
   <script src="./app.js"></script>
 </body>

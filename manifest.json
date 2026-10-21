@@ -1,15 +1,15 @@
 {
-  "name": "Aura Habits — Трекер Привычек",
+  "name": "Aura Habits — Telegram Mini App",
   "short_name": "Aura Habits",
-  "description": "Стильный темный трекер привычек с синхронизацией ПК и телефона",
-  "start_url": "/",
+  "description": "Стильный темный трекер привычек для Telegram",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#090D16",
-  "theme_color": "#090D16",
+  "background_color": "#080c14",
+  "theme_color": "#080c14",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

@@ -17,7 +17,6 @@
   <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
   <circle cx="256" cy="256" r="170" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="20" />
   <circle cx="256" cy="256" r="170" fill="none" stroke="url(#glowGrad)" stroke-width="20" stroke-dasharray="1068" stroke-dashoffset="260" stroke-linecap="round" filter="url(#glow)" />
-  <!-- Center Star / Sparkle Icon -->
   <path d="M256 120 L276 216 L372 236 L276 256 L256 352 L236 256 L140 236 L236 216 Z" fill="url(#glowGrad)" filter="url(#glow)" />
   <circle cx="256" cy="236" r="14" fill="#ffffff" />
 </svg>

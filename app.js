@@ -1,3 +1,7 @@
+/**
+ * Aura Habits — Telegram Mini App Core Logic
+ * 24/7 Cloud Sync via Telegram CloudStorage + LocalStorage Fallback
+ */
 
 (function () {
   'use strict';
@@ -13,7 +17,7 @@
 
   var elements = {
     currentDateSubtitle: document.getElementById('currentDateSubtitle'),
-    syncStatusBtn: document.getElementById('syncStatusBtn'),
+    syncStatusBadge: document.getElementById('syncStatusBadge'),
     syncStatusText: document.getElementById('syncStatusText'),
     syncStatusDot: document.querySelector('.status-dot'),
     openStatsModalBtn: document.getElementById('openStatsModalBtn'),
@@ -61,8 +65,9 @@
     confettiCanvas: document.getElementById('confettiCanvas')
   };
 
-  // Telegram WebApp Setup
-  var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  // --- TELEGRAM WEBAPP NATIVE SETUP ---
+  var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+
   if (tg) {
     state.isTelegram = true;
     try {
@@ -71,21 +76,26 @@
       if (tg.setHeaderColor) tg.setHeaderColor('#080c14');
       if (tg.setBackgroundColor) tg.setBackgroundColor('#080c14');
       if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Telegram WebApp setup error:', e);
+    }
   }
 
-  // Audio Synth
+  // --- AUDIO SYNTHESIS (Web Audio API) ---
   var audioCtx = null;
   function getAudioContext() {
     if (!audioCtx) {
       var AudioContext = window.AudioContext || window.webkitAudioContext;
       if (AudioContext) audioCtx = new AudioContext();
     }
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
     return audioCtx;
   }
 
   function playSuccessChime() {
+    if (!state.settings.soundEnabled) return;
     try {
       var ctx = getAudioContext();
       if (!ctx) return;
@@ -107,6 +117,7 @@
   }
 
   function playFanfareChime() {
+    if (!state.settings.soundEnabled) return;
     try {
       var ctx = getAudioContext();
       if (!ctx) return;
@@ -127,15 +138,27 @@
     } catch (e) {}
   }
 
-  function triggerHaptic() {
+  // --- TACTILE HAPTICS (Telegram native / Navigator vibrate) ---
+  function triggerHaptic(type) {
+    if (!state.settings.hapticsEnabled) return;
     if (tg && tg.HapticFeedback) {
-      try { tg.HapticFeedback.impactOccurred('medium'); } catch (e) {}
-    } else if ('vibrate' in navigator) {
-      try { navigator.vibrate([20, 30, 25]); } catch (e) {}
+      try {
+        if (type === 'success') {
+          tg.HapticFeedback.notificationOccurred('success');
+        } else {
+          tg.HapticFeedback.impactOccurred('medium');
+        }
+        return;
+      } catch (e) {}
+    }
+    if ('vibrate' in navigator) {
+      try {
+        navigator.vibrate(type === 'success' ? [30, 40, 30] : [20, 30, 20]);
+      } catch (e) {}
     }
   }
 
-  // Confetti
+  // --- CONFETTI CELEBRATION ---
   function launchConfetti() {
     var canvas = elements.confettiCanvas;
     if (!canvas) return;
@@ -144,6 +167,7 @@
     canvas.height = window.innerHeight;
     var colors = ['#06b6d4', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#ffffff'];
     var particles = [];
+
     for (var i = 0; i < 70; i++) {
       particles.push({
         x: canvas.width / 2 + (Math.random() - 0.5) * 200,
@@ -158,6 +182,7 @@
         shape: Math.random() > 0.5 ? 'circle' : 'rect'
       });
     }
+
     var animationId;
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -186,8 +211,9 @@
           ctx.restore();
         }
       });
-      if (alive) animationId = requestAnimationFrame(render);
-      else {
+      if (alive) {
+        animationId = requestAnimationFrame(render);
+      } else {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         cancelAnimationFrame(animationId);
       }
@@ -195,6 +221,7 @@
     render();
   }
 
+  // --- DATE HELPERS ---
   function getTodayString() {
     var d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -218,7 +245,7 @@
     elements.syncStatusDot.className = 'status-dot ' + (status === 'syncing' ? 'offline' : 'online');
   }
 
-  // --- STORAGE: TELEGRAM CLOUD STORAGE + LOCAL STORAGE ---
+  // --- STORAGE: TELEGRAM CLOUDSTORAGE + LOCALSTORAGE ---
   function getDefaultHabits() {
     return [
       { id: 'h-1', title: 'Выпить 2 литра воды', category: 'health', timeOfDay: 'all', emoji: '💧', color: '#06b6d4' },
@@ -231,13 +258,13 @@
   }
 
   function loadData() {
-    // 1. Instant local display
-    var local = localStorage.getItem('aura_habits_tg_data');
+    // 1. Instant local display from cache
+    var local = localStorage.getItem('aura_habits_data_v2');
     if (local) {
       try {
-        var d = JSON.parse(local);
-        state.habits = d.habits || [];
-        state.logs = d.logs || {};
+        var parsed = JSON.parse(local);
+        state.habits = parsed.habits || [];
+        state.logs = parsed.logs || {};
         renderAll();
       } catch (e) {}
     } else {
@@ -247,10 +274,10 @@
       renderAll();
     }
 
-    // 2. Load from Telegram CloudStorage
+    // 2. Sync from Telegram CloudStorage (synchronizes across all devices!)
     if (tg && tg.CloudStorage) {
       setSyncStatus('syncing', 'Синхронизация...');
-      tg.CloudStorage.getItem('aura_habits_cloud', function (err, value) {
+      tg.CloudStorage.getItem('aura_habits_store', function (err, value) {
         if (!err && value) {
           try {
             var cloudData = JSON.parse(value);
@@ -260,13 +287,13 @@
             if (cloudData.logs) {
               state.logs = Object.assign(state.logs, cloudData.logs);
             }
-            localStorage.setItem('aura_habits_tg_data', JSON.stringify({ habits: state.habits, logs: state.logs }));
+            localStorage.setItem('aura_habits_data_v2', JSON.stringify({ habits: state.habits, logs: state.logs }));
             setSyncStatus('online', 'Telegram Cloud');
             renderAll();
             return;
           } catch (e) {}
         }
-        // If not in cloud yet, save initial to cloud
+        // Save initial state to Telegram Cloud
         saveData();
         setSyncStatus('online', 'Telegram Cloud');
       });
@@ -276,12 +303,12 @@
   }
 
   function saveData() {
-    var data = { habits: state.habits, logs: state.logs, lastUpdated: new Date().toISOString() };
-    localStorage.setItem('aura_habits_tg_data', JSON.stringify(data));
+    var payload = { habits: state.habits, logs: state.logs, lastUpdated: new Date().toISOString() };
+    localStorage.setItem('aura_habits_data_v2', JSON.stringify(payload));
 
     if (tg && tg.CloudStorage) {
       setSyncStatus('syncing', 'Сохранение...');
-      tg.CloudStorage.setItem('aura_habits_cloud', JSON.stringify(data), function (err, success) {
+      tg.CloudStorage.setItem('aura_habits_store', JSON.stringify(payload), function (err, success) {
         if (!err && success) {
           setSyncStatus('online', 'Telegram Cloud');
         } else {
@@ -291,7 +318,7 @@
     }
   }
 
-  // Toggle habit
+  // --- HABIT ACTIONS ---
   function toggleHabit(habitId, dateStr) {
     var isDone = Boolean(state.logs[dateStr] && state.logs[dateStr][habitId]);
     var newStatus = !isDone;
@@ -300,26 +327,27 @@
     if (newStatus) {
       state.logs[dateStr][habitId] = true;
       playSuccessChime();
-      triggerHaptic();
+      triggerHaptic('impact');
 
       var total = state.habits.length;
       var count = Object.keys(state.logs[dateStr]).length;
       if (total > 0 && count === total) {
         setTimeout(function () {
+          triggerHaptic('success');
           playFanfareChime();
           launchConfetti();
         }, 150);
       }
     } else {
       delete state.logs[dateStr][habitId];
-      triggerHaptic();
+      triggerHaptic('impact');
     }
 
     saveData();
     renderAll();
   }
 
-  // Streaks
+  // --- STREAKS & CALCULATIONS ---
   function calculateHabitStreak(habitId) {
     var streak = 0;
     var checkDate = new Date();
@@ -358,10 +386,11 @@
     return total;
   }
 
-  // Rendering
+  // --- RENDERING ---
   function renderAll() {
     elements.currentDateSubtitle.textContent = formatDateFriendly(state.selectedDate);
 
+    // Hero Progress
     var totalHabits = state.habits.length;
     var completedHabits = state.logs[state.selectedDate] ? Object.keys(state.logs[state.selectedDate]).length : 0;
     var percent = totalHabits > 0 ? Math.round((completedHabits / totalHabits) * 100) : 0;
@@ -407,6 +436,7 @@
       pill.setAttribute('data-date', dateStr);
       pill.innerHTML = '<span class="day-name">' + getDayOfWeekShort(d) + '</span><span class="day-num">' + d.getDate() + '</span><span class="day-dot ' + dotClass + '"></span>';
       pill.addEventListener('click', function () {
+        triggerHaptic('impact');
         state.selectedDate = this.getAttribute('data-date');
         renderAll();
       });
@@ -464,6 +494,7 @@
 
       card.querySelector('.habit-menu-btn').addEventListener('click', function (e) {
         e.stopPropagation();
+        triggerHaptic('impact');
         if (confirm('Удалить привычку "' + habit.title + '"?')) {
           state.habits = state.habits.filter(function (h) { return h.id !== habit.id; });
           saveData();
@@ -475,11 +506,12 @@
     });
   }
 
-  // Modals & Form
+  // --- MODALS & FORM ---
   var selectedEmoji = '💧';
   var selectedColor = '#06b6d4';
 
   function openAddHabitModal() {
+    triggerHaptic('impact');
     elements.habitModalTitle.textContent = 'Новая привычка';
     elements.habitFormId.value = '';
     elements.habitFormTitle.value = '';
@@ -509,6 +541,7 @@
   elements.emojiSelector.addEventListener('click', function (e) {
     var btn = e.target.closest('.emoji-btn');
     if (btn) {
+      triggerHaptic('impact');
       selectedEmoji = btn.dataset.emoji;
       updatePickerUI();
     }
@@ -517,6 +550,7 @@
   elements.colorSelector.addEventListener('click', function (e) {
     var btn = e.target.closest('.color-btn');
     if (btn) {
+      triggerHaptic('impact');
       selectedColor = btn.dataset.color;
       updatePickerUI();
     }
@@ -537,6 +571,7 @@
     };
 
     closeHabitModal();
+    triggerHaptic('impact');
 
     var idx = state.habits.findIndex(function (h) { return h.id === habitData.id; });
     if (idx !== -1) {
@@ -548,8 +583,9 @@
     renderAll();
   });
 
-  // Stats Modal
+  // --- STATS MODAL ---
   function openStatsModal() {
+    triggerHaptic('impact');
     elements.statsBestStreak.textContent = '🔥 ' + calculateBestOverallStreak() + ' дн.';
     elements.statsTotalChecks.textContent = calculateTotalCompletions();
     elements.heatmapContainer.innerHTML = '';
@@ -606,7 +642,7 @@
     elements.statsModalOverlay.classList.add('open');
   }
 
-  // Event Listeners
+  // --- EVENT LISTENERS ---
   elements.openAddModalBtn.addEventListener('click', openAddHabitModal);
   elements.fabAddBtn.addEventListener('click', openAddHabitModal);
   elements.emptyStateAddBtn.addEventListener('click', openAddHabitModal);
@@ -621,6 +657,7 @@
   elements.filterPillsContainer.addEventListener('click', function (e) {
     var pill = e.target.closest('.filter-pill');
     if (pill) {
+      triggerHaptic('impact');
       document.querySelectorAll('.filter-pill').forEach(function (p) { p.classList.remove('active'); });
       pill.classList.add('active');
       state.activeFilter = pill.dataset.filter;
@@ -629,6 +666,7 @@
   });
 
   elements.prevDayBtn.addEventListener('click', function () {
+    triggerHaptic('impact');
     var d = new Date(state.selectedDate + 'T00:00:00');
     d.setDate(d.getDate() - 1);
     state.selectedDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -636,6 +674,7 @@
   });
 
   elements.nextDayBtn.addEventListener('click', function () {
+    triggerHaptic('impact');
     var d = new Date(state.selectedDate + 'T00:00:00');
     d.setDate(d.getDate() + 1);
     state.selectedDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -643,6 +682,7 @@
   });
 
   elements.goToTodayBtn.addEventListener('click', function () {
+    triggerHaptic('impact');
     state.selectedDate = getTodayString();
     renderAll();
   });
@@ -652,6 +692,6 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // Init
+  // --- START ---
   loadData();
 })();

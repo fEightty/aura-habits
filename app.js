@@ -241,8 +241,12 @@
   }
 
   function setSyncStatus(status, text) {
-    elements.syncStatusText.textContent = text;
-    elements.syncStatusDot.className = 'status-dot ' + (status === 'syncing' ? 'offline' : 'online');
+    if (elements.syncStatusText) {
+      elements.syncStatusText.textContent = text || 'В сети';
+    }
+    if (elements.syncStatusDot) {
+      elements.syncStatusDot.className = 'status-dot ' + (status === 'syncing' ? 'offline' : 'online');
+    }
   }
 
   // --- STORAGE: TELEGRAM CLOUDSTORAGE + LOCALSTORAGE ---
@@ -274,31 +278,42 @@
       renderAll();
     }
 
-    // 2. Sync from Telegram CloudStorage (synchronizes across all devices!)
-    if (tg && tg.CloudStorage) {
-      setSyncStatus('syncing', 'Синхронизация...');
-      tg.CloudStorage.getItem('aura_habits_store', function (err, value) {
-        if (!err && value) {
-          try {
-            var cloudData = JSON.parse(value);
-            if (cloudData.habits && cloudData.habits.length > 0) {
-              state.habits = cloudData.habits;
-            }
-            if (cloudData.logs) {
-              state.logs = Object.assign(state.logs, cloudData.logs);
-            }
-            localStorage.setItem('aura_habits_data_v2', JSON.stringify({ habits: state.habits, logs: state.logs }));
-            setSyncStatus('online', 'Telegram Cloud');
-            renderAll();
-            return;
-          } catch (e) {}
-        }
-        // Save initial state to Telegram Cloud
-        saveData();
-        setSyncStatus('online', 'Telegram Cloud');
-      });
-    } else {
-      setSyncStatus('online', 'В сети');
+    // Default status is always ready & online
+    setSyncStatus('online', 'В сети');
+
+    // 2. Safe background sync with Telegram CloudStorage if inside Telegram
+    if (tg && tg.CloudStorage && tg.initData) {
+      var syncDone = false;
+      var safetyTimer = setTimeout(function () {
+        if (!syncDone) setSyncStatus('online', 'В сети');
+      }, 1200);
+
+      try {
+        tg.CloudStorage.getItem('aura_habits_store', function (err, value) {
+          syncDone = true;
+          clearTimeout(safetyTimer);
+          if (!err && value) {
+            try {
+              var cloudData = JSON.parse(value);
+              if (cloudData.habits && cloudData.habits.length > 0) {
+                state.habits = cloudData.habits;
+              }
+              if (cloudData.logs) {
+                state.logs = Object.assign(state.logs, cloudData.logs);
+              }
+              localStorage.setItem('aura_habits_data_v2', JSON.stringify({ habits: state.habits, logs: state.logs }));
+              renderAll();
+            } catch (e) {}
+          } else {
+            // First time in cloud: save current data
+            saveData();
+          }
+          setSyncStatus('online', 'В сети');
+        });
+      } catch (e) {
+        clearTimeout(safetyTimer);
+        setSyncStatus('online', 'В сети');
+      }
     }
   }
 
@@ -306,16 +321,12 @@
     var payload = { habits: state.habits, logs: state.logs, lastUpdated: new Date().toISOString() };
     localStorage.setItem('aura_habits_data_v2', JSON.stringify(payload));
 
-    if (tg && tg.CloudStorage) {
-      setSyncStatus('syncing', 'Сохранение...');
-      tg.CloudStorage.setItem('aura_habits_store', JSON.stringify(payload), function (err, success) {
-        if (!err && success) {
-          setSyncStatus('online', 'Telegram Cloud');
-        } else {
-          setSyncStatus('online', 'Локально');
-        }
-      });
+    if (tg && tg.CloudStorage && tg.initData) {
+      try {
+        tg.CloudStorage.setItem('aura_habits_store', JSON.stringify(payload), function () {});
+      } catch (e) {}
     }
+    setSyncStatus('online', 'В сети');
   }
 
   // --- HABIT ACTIONS ---
@@ -495,15 +506,69 @@
       card.querySelector('.habit-menu-btn').addEventListener('click', function (e) {
         e.stopPropagation();
         triggerHaptic('impact');
-        if (confirm('Удалить привычку "' + habit.title + '"?')) {
-          state.habits = state.habits.filter(function (h) { return h.id !== habit.id; });
-          saveData();
-          renderAll();
-        }
+        toggleDropdownMenu(card, habit);
       });
 
       elements.habitsListContainer.appendChild(card);
     });
+  }
+
+  // --- DROPDOWN ACTION MENU ---
+  var activeDropdown = null;
+
+  function closeAllDropdowns() {
+    if (activeDropdown && activeDropdown.parentNode) {
+      activeDropdown.parentNode.removeChild(activeDropdown);
+    }
+    activeDropdown = null;
+  }
+
+  // Close dropdown on click outside
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.habit-dropdown') && !e.target.closest('.habit-menu-btn')) {
+      closeAllDropdowns();
+    }
+  });
+
+  function toggleDropdownMenu(card, habit) {
+    var existing = card.querySelector('.habit-dropdown');
+    if (existing) {
+      closeAllDropdowns();
+      return;
+    }
+    closeAllDropdowns();
+
+    var menu = document.createElement('div');
+    menu.className = 'habit-dropdown';
+    menu.innerHTML = 
+      '<button type="button" class="dropdown-action-btn edit-action">' +
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>' +
+        '<span>Редактировать</span>' +
+      '</button>' +
+      '<button type="button" class="dropdown-action-btn danger delete-action">' +
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' +
+        '<span>Удалить</span>' +
+      '</button>';
+
+    menu.querySelector('.edit-action').addEventListener('click', function (e) {
+      e.stopPropagation();
+      closeAllDropdowns();
+      openEditHabitModal(habit);
+    });
+
+    menu.querySelector('.delete-action').addEventListener('click', function (e) {
+      e.stopPropagation();
+      closeAllDropdowns();
+      triggerHaptic('impact');
+      if (confirm('Удалить привычку "' + habit.title + '"?')) {
+        state.habits = state.habits.filter(function (h) { return h.id !== habit.id; });
+        saveData();
+        renderAll();
+      }
+    });
+
+    card.appendChild(menu);
+    activeDropdown = menu;
   }
 
   // --- MODALS & FORM ---
@@ -519,6 +584,20 @@
     elements.habitFormTimeOfDay.value = 'all';
     selectedEmoji = '💧';
     selectedColor = '#06b6d4';
+    updatePickerUI();
+    elements.habitModalOverlay.classList.add('open');
+    elements.habitFormTitle.focus();
+  }
+
+  function openEditHabitModal(habit) {
+    triggerHaptic('impact');
+    elements.habitModalTitle.textContent = 'Редактировать привычку';
+    elements.habitFormId.value = habit.id;
+    elements.habitFormTitle.value = habit.title;
+    elements.habitFormCategory.value = habit.category || 'health';
+    elements.habitFormTimeOfDay.value = habit.timeOfDay || 'all';
+    selectedEmoji = habit.emoji || '💧';
+    selectedColor = habit.color || '#06b6d4';
     updatePickerUI();
     elements.habitModalOverlay.classList.add('open');
     elements.habitFormTitle.focus();
